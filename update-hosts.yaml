@@ -1,0 +1,19 @@
+---
+- name: Update Linux systems
+  hosts: all
+  become: yes
+  tasks:
+    - name: Update all packages
+      ansible.builtin.package:
+        name: "*"
+        state: latest
+
+    - name: Reboot if needed
+      ansible.builtin.shell: |
+        if [ -f /var/run/reboot-required ]; then
+          reboot
+        fi
+      args:
+        warn: false
+      register: reboot_status
+      changed_when: reboot_status.rc == 0
