@@ -1,19 +1,25 @@
 ---
-- name: Update Linux Hosts
+- name: Update and upgrade all hosts
   hosts: all
   become: yes
-  tasks:
-    - name: Update all packages
-      ansible.builtin.package:
-        name: "*"
-        state: latest
+  gather_facts: yes
 
-    - name: Reboot if needed
-      ansible.builtin.shell: |
-        if [ -f /var/run/reboot-required ]; then
-          reboot
-        fi
-      args:
-        warn: false
-      register: reboot_status
-      changed_when: reboot_status.rc == 0
+  tasks:
+
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Upgrade all packages
+      ansible.builtin.apt:
+        upgrade: dist
+      register: upgrade_result
+
+    - name: Reboot if required
+      ansible.builtin.reboot:
+        msg: "Reboot initiated by Ansible after package upgrade"
+        pre_reboot_delay: 5
+        reboot_timeout: 600
+        post_reboot_delay: 15
+      when: upgrade_result.changed
