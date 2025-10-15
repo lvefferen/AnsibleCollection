@@ -1,0 +1,28 @@
+---
+- name: Update and upgrade all hosts
+  hosts: all
+  become: yes
+  gather_facts: yes
+
+  tasks:
+
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Upgrade all packages
+      ansible.builtin.apt:
+        upgrade: dist
+      register: upgrade_result
+
+    - name: Check if reboot is required
+      ansible.builtin.stat:
+        path: /var/run/reboot-required
+      register: reboot_file
+      when: upgrade_result.changed
+
+    - name: Notify that reboot is required
+      ansible.builtin.debug:
+        msg: "A reboot would be required after this upgrade."
+      when: reboot_file.stat.exists is defined and reboot_file.stat.exists
